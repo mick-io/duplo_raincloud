@@ -4,70 +4,80 @@
 import ForecastService from "../services/forecast.service";
 import ForecastRepository from "../repositories/forecast.repository";
 import { ForecastDTO } from "../dtos";
+import { ConfigType } from "../config";
 
 describe("ForecastService", () => {
-  let service: ForecastService;
-  let mockRepository: jest.Mocked<ForecastRepository>;
+  let forecastService: ForecastService;
+  let mockForecastRepository: jest.Mocked<ForecastRepository>;
+  let mockLocationsService: jest.Mocked<LocationsService>;
+  let mockConfig: ConfigType;
 
   beforeEach(() => {
-    mockRepository = {
-      get: jest.fn(),
-      list: jest.fn(),
+    mockForecastRepository = {
       upsert: jest.fn(),
+      find: jest.fn(),
     } as any;
 
-    service = new ForecastService({
-      config: {},
-      forecastRepository: mockRepository,
+    mockLocationsService = {
+      listLocations: jest.fn(),
+    } as any;
+
+    mockConfig = {} as ConfigType;
+
+    forecastService = new ForecastService({
+      config: mockConfig,
+      forecastRepository: mockForecastRepository,
+      locationService: mockLocationsService,
     });
   });
 
-  it("should return null if no forecast is found", async () => {
-    mockRepository.get.mockResolvedValue(null);
+  describe("getLatest", () => {
+    it("should fetch the latest forecast for each location", async () => {
+      const locations = [{ latitude: 1, longitude: 1 }];
+      const forecast = { temperature: 20 };
+      const formattedForecast = { temperature: "20F" };
+      mockLocationsService.listLocations.mockResolvedValue(locations);
+      forecastService.fetchForecast = jest.fn().mockResolvedValue(forecast);
+      mockForecastRepository.upsert.mockResolvedValue({
+        toObject: () => forecast,
+      });
+      forecastService.formatForecast = jest
+        .fn()
+        .mockReturnValue(formattedForecast);
 
-    const result = await service.getForecast(0, 0);
+      const result = await forecastService.getLatest();
 
-    expect(result).toBeNull();
-    expect(mockRepository.get).toHaveBeenCalledWith(0, 0);
+      expect(mockLocationsService.listLocations).toHaveBeenCalled();
+      expect(forecastService.fetchForecast).toHaveBeenCalledWith(1, 1);
+      expect(mockForecastRepository.upsert).toHaveBeenCalledWith(forecast);
+      expect(forecastService.formatForecast).toHaveBeenCalledWith(forecast);
+      expect(result).toEqual([formattedForecast]);
+    });
   });
 
-  it("should return a formatted forecast if found", async () => {
-    const mockForecastDto: ForecastDTO = {
-      latitude: 0,
-      longitude: 0,
-      generationtime_ms: 0,
-      utc_offset_seconds: 0,
-      timezone: "UTC",
-      timezone_abbreviation: "UTC",
-      elevation: 0,
-      daily_units: {
-        time: "00:00",
-        temperature_2m_max: "20",
-        temperature_2m_min: "10",
-      },
-      daily: {
-        time: ["00:00", "01:00"],
-        temperature_2m_max: [20, 21],
-        temperature_2m_min: [10, 11],
-      },
-    };
+  describe("listForecasts", () => {
+    it("should list forecasts for each location", async () => {
+      const locations = [{ latitude: 1, longitude: 1 }];
+      const forecast = { temperature: 20 };
+      const formattedForecast = { temperature: "20F" };
+      mockLocationsService.listLocations.mockResolvedValue(locations);
+      mockForecastRepository.find.mockResolvedValue(null);
+      forecastService.fetchForecast = jest.fn().mockResolvedValue(forecast);
+      mockForecastRepository.upsert.mockResolvedValue({
+        toObject: () => forecast,
+      });
+      forecastService.formatForecast = jest
+        .fn()
+        .mockReturnValue(formattedForecast);
 
-    const mockForecast = {
-      toObject: jest.fn().mockReturnValue(mockForecastDto),
-    };
+      const result = await forecastService.listForecasts();
 
-    mockRepository.get.mockResolvedValue(mockForecast);
-
-    const result = await service.getForecast(0, 0);
-
-    expect(result.latitude).toEqual(mockForecastDto.latitude);
-    expect(result.longitude).toEqual(mockForecastDto.longitude);
-    expect(result.forecast.length).toEqual(mockForecastDto.daily.time.length);
-
-    result.forecast.forEach((forecast, i) => {
-      expect(forecast.time).toEqual(mockForecastDto.daily.time[i]);
+      expect(mockLocationsService.listLocations).toHaveBeenCalled();
+      expect(mockForecastRepository.find).toHaveBeenCalledWith(1, 1);
+      expect(forecastService.fetchForecast).toHaveBeenCalledWith(1, 1);
+      expect(mockForecastRepository.upsert).toHaveBeenCalledWith(forecast);
+      expect(forecastService.formatForecast).toHaveBeenCalledWith(forecast);
+      expect(result).toEqual([formattedForecast]);
     });
-
-    expect(mockRepository.get).toHaveBeenCalledWith(0, 0);
   });
 });

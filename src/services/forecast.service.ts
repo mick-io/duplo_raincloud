@@ -53,14 +53,6 @@ export default class ForecastService {
     return forecasts.map((forecast) => this.formatForecast(forecast));
   }
 
-  async getForecast(latitude: number, longitude: number) {
-    const doc = await this.forecastsRepository.find(latitude, longitude);
-    if (!doc) {
-      return null;
-    }
-    return this.formatForecast(doc);
-  }
-
   private async fetchForecast(latitude: number, longitude: number) {
     const url = new URL(this.config.openMeteoBaseURL + "/forecast");
     const params = new URLSearchParams({

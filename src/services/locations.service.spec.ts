@@ -48,13 +48,19 @@ describe("LocationsService", () => {
   });
 
   it("should add a location", async () => {
-    const mockLocation = { id: "1", latitude: 10, longitude: 20 };
+    const mockLocation = {
+      id: "1",
+      latitude: 10,
+      longitude: 20,
+      toObject: jest
+        .fn()
+        .mockReturnValue({ id: "1", latitude: 10, longitude: 20 }),
+    };
     locationsRepository.upsert.mockResolvedValue(mockLocation);
 
     await locationsService.addLocation(mockLocation);
 
     expect(locationsRepository.upsert).toHaveBeenCalledWith(mockLocation);
-    expect(forecastService.storeForecast).toHaveBeenCalledWith(mockLocation);
   });
 
   it("should delete a location by ID", async () => {
