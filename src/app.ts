@@ -1,5 +1,6 @@
 import { loadControllers, scopePerRequest } from "awilix-express";
 import express from "express";
+import path from "path";
 
 import container from "./container";
 
@@ -7,9 +8,8 @@ const app = express();
 
 app.use(express.json());
 app.use(scopePerRequest(container));
-
 app.use(
-  loadControllers("controllers/*.ts", {
+  loadControllers("controllers/*" + path.extname(__filename), {
     cwd: __dirname,
     ignore: ["controllers/*.spec.ts"],
   }),
