@@ -1,3 +1,3 @@
 #!/bin/bash
 
-curl -X GET "http://localhost:4000/locations/"
+curl -i -X GET "http://localhost:4000/locations/"
