@@ -2,12 +2,7 @@ import { before, DELETE, GET, POST, route } from "awilix-express";
 import { Request, Response } from "express";
 import { ReasonPhrases, StatusCodes } from "http-status-codes";
 
-import {
-  AddLocationDTO,
-  DeleteLocationDTO,
-  ForecastResponse,
-  ListLocationDTO,
-} from "../dtos";
+import { AddLocationDTO, DeleteLocationDTO, ListLocationDTO } from "../dtos";
 import validate from "../middleware/validation.middleware";
 import {
   AddLocationDTOSchema,
@@ -15,6 +10,7 @@ import {
   ListLocationDTOSchema,
 } from "../schemas/location.schema";
 import LocationsService from "../services/locations.service";
+import { ILocation } from "../models/location.model";
 
 interface IDependencies {
   locationService: LocationsService;
@@ -44,21 +40,16 @@ export default class LocationsController {
   @before([validate(AddLocationDTOSchema, "body")])
   async addLocation(
     req: Request<unknown, unknown, AddLocationDTO>,
-    res: Response<ForecastResponse | string>,
+    res: Response<ILocation | string>,
   ) {
-    try {
-      const { latitude, longitude } = req.body;
-      const forecast = await this.locationService.addLocation({
-        latitude,
-        longitude,
-      });
+    const { latitude, longitude } = req.body;
+    const location = await this.locationService.addLocation({
+      latitude,
+      longitude,
+    });
 
-      if (forecast) {
-        return res.status(StatusCodes.CREATED).json(forecast);
-      }
-    } catch (error) {
-      // TODO: Create custom error for failed OpenMeteo calls.
-      console.error(error);
+    if (location) {
+      return res.status(StatusCodes.CREATED).json(location);
     }
     return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)

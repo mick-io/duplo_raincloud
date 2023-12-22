@@ -12,13 +12,13 @@ export default class ForecastRepository {
     return doc;
   }
 
+  async find(latitude: number, longitude: number) {
+    const doc = await Forecast.findOne({ latitude, longitude });
+    return doc;
+  }
+
   async list() {
     const forecasts = await Forecast.find();
     return forecasts;
-  }
-
-  async get(latitude: number, longitude: number) {
-    const forecast = await Forecast.findOne({ latitude, longitude });
-    return forecast;
   }
 }

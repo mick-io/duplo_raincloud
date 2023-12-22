@@ -1,59 +1,64 @@
 import axios from "axios";
 
 import { ConfigType } from "../config";
-import { AddLocationDTO, ForecastDTO, ForecastResponse } from "../dtos";
+import { ForecastDTO, ForecastResponse } from "../dtos";
 import ForecastRepository from "../repositories/forecast.repository";
 import { ForecastDTOSchema } from "../schemas/forecast.schema";
+import LocationsService from "./locations.service";
 
 interface IDependencies {
   config: ConfigType;
   forecastRepository: ForecastRepository;
+  locationService: LocationsService;
 }
 
 export default class ForecastService {
   private readonly config;
   private readonly forecastsRepository;
+  private readonly locationService;
 
-  constructor({ config, forecastRepository }: IDependencies) {
+  constructor({ config, forecastRepository, locationService }: IDependencies) {
     this.config = config;
     this.forecastsRepository = forecastRepository;
+    this.locationService = locationService;
   }
 
   async getLatest() {
-    await this.updateForecasts();
-    return this.listForecasts();
+    const locations = await this.locationService.listLocations();
+
+    const promises = locations.map(async ({ latitude, longitude }) => {
+      const forecast = await this.fetchForecast(latitude, longitude);
+      const doc = await this.forecastsRepository.upsert(forecast);
+      return doc.toObject({ versionKey: false });
+    });
+
+    const forecast = await Promise.all(promises);
+    return forecast.map((forecast) => this.formatForecast(forecast));
   }
 
   async listForecasts() {
-    const docs = await this.forecastsRepository.list();
-    const forecasts = docs.map((doc) => doc.toObject({ versionKey: false }));
+    const locations = await this.locationService.listLocations();
 
+    const promises = locations.map(async ({ latitude, longitude }) => {
+      let doc = await this.forecastsRepository.find(latitude, longitude);
+
+      if (!doc) {
+        const forecast = await this.fetchForecast(latitude, longitude);
+        doc = await this.forecastsRepository.upsert(forecast);
+      }
+      return doc.toObject({ versionKey: false });
+    });
+
+    const forecasts = await Promise.all(promises);
     return forecasts.map((forecast) => this.formatForecast(forecast));
   }
 
   async getForecast(latitude: number, longitude: number) {
-    const doc = await this.forecastsRepository.get(latitude, longitude);
+    const doc = await this.forecastsRepository.find(latitude, longitude);
     if (!doc) {
       return null;
     }
-    const forecast = doc.toObject({ versionKey: false });
-    return this.formatForecast(forecast);
-  }
-
-  async storeForecast(location: AddLocationDTO) {
-    const { latitude, longitude } = location;
-    const forecast = await this.fetchForecast(latitude, longitude);
-    return this.forecastsRepository.upsert(forecast);
-  }
-
-  private async updateForecasts() {
-    const locations = (await this.listForecasts()).map(
-      ({ latitude, longitude }) => {
-        return { latitude, longitude };
-      },
-    );
-    const promises = locations.map((location) => this.storeForecast(location));
-    return Promise.all(promises);
+    return this.formatForecast(doc);
   }
 
   private async fetchForecast(latitude: number, longitude: number) {
