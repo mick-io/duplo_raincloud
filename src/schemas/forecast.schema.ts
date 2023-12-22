@@ -26,4 +26,4 @@ export const ForecastSchema = z.object({
 
 export type DailyUnits = z.infer<typeof DailyUnitsSchema>;
 export type Daily = z.infer<typeof DailySchema>;
-export type Forecast = z.infer<typeof ForecastSchema>;
+export type ForecastDTO = z.infer<typeof ForecastSchema>;

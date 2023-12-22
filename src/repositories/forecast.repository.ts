@@ -1,5 +1,5 @@
 import Forecast from "../models/forecast.model";
-import { Forecast as ForecastType } from "../schemas/forecast.schema";
+import { ForecastDTO as ForecastType } from "../schemas/forecast.schema";
 
 export default class ForecastRepository {
   async upsert(forecast: ForecastType) {
@@ -17,8 +17,8 @@ export default class ForecastRepository {
     return forecasts;
   }
 
-  async deleteAll() {
-    const { deletedCount } = await Forecast.deleteMany();
-    return deletedCount;
+  async get(latitude: number, longitude: number) {
+    const forecast = await Forecast.findOne({ latitude, longitude });
+    return forecast;
   }
 }

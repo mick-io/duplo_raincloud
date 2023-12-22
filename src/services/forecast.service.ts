@@ -2,7 +2,7 @@ import axios from "axios";
 
 import { ConfigType } from "../config";
 import ForecastRepository from "../repositories/forecast.repository";
-import { ForecastSchema } from "../schemas/forecast.schema";
+import { ForecastDTO, ForecastSchema } from "../schemas/forecast.schema";
 import { AddLocationDTO } from "../schemas/location.schema";
 
 interface IDependencies {
@@ -28,17 +28,16 @@ export default class ForecastService {
     const docs = await this.forecastsRepository.list();
     const forecasts = docs.map((doc) => doc.toObject({ versionKey: false }));
 
-    return forecasts.map(({ latitude, longitude, daily, daily_units }) => {
-      const { temperature_2m_max, temperature_2m_min, time } = daily;
+    return forecasts.map((forecast) => this.formatForecast(forecast));
+  }
 
-      const forecast = time.map((time, i) => {
-        const high = temperature_2m_max[i] + daily_units.temperature_2m_max;
-        const low = temperature_2m_min[i] + daily_units.temperature_2m_min;
-        return { time, high, low };
-      });
-
-      return { latitude, longitude, forecast };
-    });
+  async getForecast(latitude: number, longitude: number) {
+    const doc = await this.forecastsRepository.get(latitude, longitude);
+    if (!doc) {
+      return null;
+    }
+    const forecast = doc.toObject({ versionKey: false });
+    return this.formatForecast(forecast);
   }
 
   async storeForecast(location: AddLocationDTO) {
@@ -69,8 +68,21 @@ export default class ForecastService {
     });
 
     url.search = params.toString();
-    const resp = await axios.get(url.toString());
+    const resp = await axios.get<ForecastDTO>(url.toString());
 
     return ForecastSchema.parse(resp.data);
+  }
+
+  private formatForecast(dto: ForecastDTO) {
+    const { latitude, longitude, daily, daily_units } = dto;
+    const { temperature_2m_max, temperature_2m_min, time } = daily;
+
+    const forecast = time.map((time, i) => {
+      const high = temperature_2m_max[i] + daily_units.temperature_2m_max;
+      const low = temperature_2m_min[i] + daily_units.temperature_2m_min;
+      return { time, high, low };
+    });
+
+    return { latitude, longitude, forecast };
   }
 }

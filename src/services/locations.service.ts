@@ -27,8 +27,13 @@ export default class LocationsService {
 
   async addLocation(dto: AddLocationDTO) {
     await this.forecastService.storeForecast(dto);
-    const doc = await this.locations.upsert(dto);
-    return doc.toObject({ versionKey: false });
+    await this.locations.upsert(dto);
+    const forecast = await this.forecastService.getForecast(
+      dto.latitude,
+      dto.longitude,
+    );
+    return forecast;
+    // return doc.toObject({ versionKey: false });
   }
 
   async deleteLocation(dto: DeleteLocationDTO) {

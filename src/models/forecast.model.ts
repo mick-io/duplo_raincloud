@@ -1,6 +1,6 @@
 import mongoose, { Schema } from 'mongoose';
 
-import { Forecast as ForecastType } from '../schemas/forecast.schema';
+import { ForecastDTO as ForecastType } from '../schemas/forecast.schema';
 
 const DailyUnitsSchema = new Schema({
   time: { type: String, required: true },
