@@ -1,10 +1,10 @@
 import { ObjectId } from "mongodb";
 import { z } from "zod";
 
-const MIN_LATITUDE = -90;
-const MAX_LATITUDE = 90;
-const MIN_LONGITUDE = -180;
-const MAX_LONGITUDE = 180;
+const MIN_LATITUDE = -89;
+const MAX_LATITUDE = 89;
+const MIN_LONGITUDE = -179;
+const MAX_LONGITUDE = 179;
 
 export const AddLocationDTOSchema = z.object({
   latitude: z
