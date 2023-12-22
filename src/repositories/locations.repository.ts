@@ -10,25 +10,30 @@ export default class LocationsRepository {
       { latitude, longitude },
       location,
       { upsert: true, new: true, runValidators: true },
-    ).lean();
+    );
     return doc;
   }
 
   async list(criteria: ListLocationDTO = {}) {
-    return Location.find(criteria).lean();
+    return Location.find(criteria);
   }
 
   async find(id: string) {
     if (!ObjectId.isValid(id)) {
       throw new Error("Invalid ObjectId");
     }
-    return Location.findById(id).lean();
+    return Location.findById(id);
   }
 
-  async delete(id: string) {
+  async delete(latitude: number, longitude: number) {
+    const doc = await Location.findOneAndDelete({ latitude, longitude });
+    return doc;
+  }
+
+  async deleteById(id: string) {
     if (!ObjectId.isValid(id)) {
       throw new Error("Invalid ObjectId");
     }
-    return Location.findByIdAndDelete(id).lean();
+    return Location.findByIdAndDelete(id);
   }
 }

@@ -3,23 +3,19 @@ import axios from "axios";
 import { ConfigType } from "../config";
 import ForecastRepository from "../repositories/forecast.repository";
 import { AddLocationDTO } from "../schemas/location.schema";
-import LocationService from "./locations.service";
 
 interface IDependencies {
   config: ConfigType;
   forecastRepository: ForecastRepository;
-  locationService: LocationService;
 }
 
 export default class ForecastService {
   private readonly config;
   private readonly forecasts;
-  private readonly locationService;
 
-  constructor({ config, forecastRepository, locationService }: IDependencies) {
+  constructor({ config, forecastRepository }: IDependencies) {
     this.config = config;
     this.forecasts = forecastRepository;
-    this.locationService = locationService;
   }
 
   async getLatest() {
@@ -33,6 +29,21 @@ export default class ForecastService {
 
   async storeForecast(location: AddLocationDTO) {
     const { latitude, longitude } = location;
+    const forecast = await this.fetchForecast(latitude, longitude);
+    return this.forecasts.upsert(forecast);
+  }
+
+  private async updateForecasts() {
+    const locations = (await this.listForecasts()).map(
+      ({ latitude, longitude }) => {
+        return { latitude, longitude };
+      },
+    );
+    const promises = locations.map((location) => this.storeForecast(location));
+    return Promise.all(promises);
+  }
+
+  private async fetchForecast(latitude: number, longitude: number) {
     const url = new URL(this.config.openMeteoBaseURL + "/forecast");
 
     const params = new URLSearchParams({
@@ -43,12 +54,6 @@ export default class ForecastService {
 
     url.search = params.toString();
     const resp = await axios.get(url.toString(), {});
-    return this.forecasts.upsert(resp.data);
-  }
-
-  private async updateForecasts() {
-    const locations = await this.locationService.listLocations({});
-    const promises = locations.map((location) => this.storeForecast(location));
-    return Promise.all(promises);
+    return resp.data;
   }
 }

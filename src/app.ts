@@ -8,7 +8,12 @@ const app = express();
 app.use(express.json());
 app.use(scopePerRequest(container));
 
-app.use(loadControllers("controllers/*.ts", { cwd: __dirname }));
+app.use(
+  loadControllers("controllers/*.ts", {
+    cwd: __dirname,
+    ignore: ["controllers/*.spec.ts"],
+  }),
+);
 
 app.use((req, res, next) => {
   console.log(`Incoming request for ${req.url}`);

@@ -23,11 +23,14 @@ export const AddLocationDTOSchema = z.object({
 
 export const ListLocationDTOSchema = AddLocationDTOSchema.partial();
 
-export const DeleteLocationDTOSchema = z.object({
-  id: z
-    .string()
-    .refine((id) => ObjectId.isValid(id), "ID must be a valid ObjectId"),
-});
+export const DeleteLocationDTOSchema = z.union([
+  AddLocationDTOSchema,
+  z.object({
+    id: z
+      .string()
+      .refine((id) => ObjectId.isValid(id), "ID must be a valid ObjectId"),
+  }),
+]);
 
 export type AddLocationDTO = z.infer<typeof AddLocationDTOSchema>;
 export type ListLocationDTO = z.infer<typeof ListLocationDTOSchema>;

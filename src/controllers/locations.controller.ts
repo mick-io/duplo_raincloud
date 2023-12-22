@@ -1,13 +1,15 @@
 import { before, DELETE, GET, POST, route } from "awilix-express";
 import { Request, Response } from "express";
+import { ReasonPhrases, StatusCodes } from "http-status-codes";
 
 import validate from "../middleware/validation.middleware";
 import {
   AddLocationDTO,
-  ListLocationDTO,
   AddLocationDTOSchema,
-  ListLocationDTOSchema,
   DeleteLocationDTO,
+  DeleteLocationDTOSchema,
+  ListLocationDTO,
+  ListLocationDTOSchema,
 } from "../schemas/location.schema";
 import LocationsService from "../services/locations.service";
 
@@ -48,12 +50,29 @@ export default class LocationsController {
 
   @route("/")
   @DELETE()
-  @before([validate(ListLocationDTOSchema, "query")])
+  @before([validate(DeleteLocationDTOSchema, "query")])
   async deleteLocation(
     req: Request<unknown, unknown, unknown, DeleteLocationDTO>,
     res: Response,
   ) {
-    const loc = await this.locationService.deleteLocation(req.query.id);
-    res.json(loc);
+    try {
+      let status = StatusCodes.NO_CONTENT;
+      let message = ReasonPhrases.NO_CONTENT;
+
+      const ok = await this.locationService.deleteLocation(req.query);
+
+      if (!ok) {
+        status = StatusCodes.NOT_FOUND;
+        message = ReasonPhrases.NOT_FOUND;
+      }
+
+      res.status(status).json(message);
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
+      if (error.message) {
+        res.status(StatusCodes.BAD_REQUEST).json(ReasonPhrases.BAD_REQUEST);
+      }
+    }
   }
 }

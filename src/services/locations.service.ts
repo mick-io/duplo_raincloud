@@ -1,5 +1,5 @@
 import LocationsRepository from "../repositories/locations.repository";
-import { AddLocationDTO } from "../schemas/location.schema";
+import { AddLocationDTO, DeleteLocationDTO } from "../schemas/location.schema";
 import ForecastService from "./forecast.service";
 
 interface IDependencies {
@@ -16,16 +16,28 @@ export default class LocationsService {
     this.forecastService = forecastService;
   }
 
-  async listLocations(criteria: Partial<AddLocationDTO>) {
-    return this.locations.list(criteria);
+  async listLocations(dto: Partial<AddLocationDTO>) {
+    return this.locations.list(dto);
   }
 
-  async addLocation(location: AddLocationDTO) {
-    await this.forecastService.storeForecast(location);
-    return this.locations.upsert(location);
+  async addLocation(dto: AddLocationDTO) {
+    await this.forecastService.storeForecast(dto);
+    return this.locations.upsert(dto);
   }
 
-  async deleteLocation(id: string) {
-    return this.locations.delete(id);
+  async deleteLocation(dto: DeleteLocationDTO) {
+    let ok;
+
+    if ("id" in dto) {
+      ok = Boolean(await this.locations.deleteById(dto.id));
+      return ok;
+    }
+
+    if ("latitude" in dto && "longitude" in dto) {
+      ok = Boolean(await this.locations.delete(dto.latitude, dto.longitude));
+      return ok;
+    }
+
+    throw new Error("Invalid DeleteLocationDTO");
   }
 }

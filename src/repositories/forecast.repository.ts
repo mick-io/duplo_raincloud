@@ -1,5 +1,5 @@
-import Forecast from "../models/forecast.model";
-import { AddForecastDTO } from "../schemas/forecast.schema";
+import Forecast from '../models/forecast.model';
+import { AddForecastDTO } from '../schemas/forecast.schema';
 
 export default class ForecastRepository {
   async upsert(forecast: AddForecastDTO) {
@@ -8,12 +8,12 @@ export default class ForecastRepository {
       { latitude, longitude },
       forecast,
       { upsert: true, new: true, runValidators: true },
-    ).lean();
+    );
     return doc;
   }
 
   async list() {
-    const forecasts = await Forecast.find().lean();
+    const forecasts = await Forecast.find();
     return forecasts;
   }
 }
