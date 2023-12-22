@@ -18,7 +18,10 @@ services:
       - "4000:4000"
     depends_on:
       - mongodb
-    env_file:
-      - .env
+    environment:
+      - PORT=4000
+      - NODE_ENV=test
+      - OPEN_METEO_BASE_URL=https://api.open-meteo.com/v1
+      - MONGO_URI=mongodb://root:example@mongodb:27017/
 volumes:
   mongodb_data:
