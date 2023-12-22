@@ -65,7 +65,7 @@ describe("LocationsRepository", () => {
     const location = { latitude: 10, longitude: 20 };
     const { _id } = await Location.create(location);
 
-    await locationsRepository.delete(_id.toString());
+    await locationsRepository.deleteById(_id.toString());
 
     const foundLocation = await Location.findById(_id);
     expect(foundLocation).toBeNull();
@@ -78,7 +78,7 @@ describe("LocationsRepository", () => {
   });
 
   it("should throw an error when deleting with an invalid ObjectId", async () => {
-    await expect(locationsRepository.delete("invalid")).rejects.toThrow(
+    await expect(locationsRepository.deleteById("invalid")).rejects.toThrow(
       "Invalid ObjectId",
     );
   });

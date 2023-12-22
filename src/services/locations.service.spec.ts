@@ -15,9 +15,11 @@ describe("LocationsService", () => {
       list: jest.fn(),
       upsert: jest.fn(),
       delete: jest.fn(),
+      deleteById: jest.fn(),
     };
     forecastService = {
       storeForecast: jest.fn(),
+      getForecast: jest.fn(),
     };
     locationsService = new LocationsService({
       locationsRepository,
@@ -26,30 +28,41 @@ describe("LocationsService", () => {
   });
 
   it("should list all locations", async () => {
-    const mockLocations = [{ id: "1", latitude: 10, longitude: 20 }];
+    const mockLocations = [
+      {
+        id: "1",
+        latitude: 10,
+        longitude: 20,
+        toObject: jest
+          .fn()
+          .mockReturnValue({ id: "1", latitude: 10, longitude: 20 }),
+      },
+    ];
     locationsRepository.list.mockResolvedValue(mockLocations);
 
     const locations = await locationsService.listLocations({});
 
-    expect(locations).toEqual(mockLocations);
+    expect(locations).toEqual(
+      mockLocations.map((location) => location.toObject()),
+    );
   });
 
   it("should add a location", async () => {
     const mockLocation = { id: "1", latitude: 10, longitude: 20 };
     locationsRepository.upsert.mockResolvedValue(mockLocation);
 
-    const location = await locationsService.addLocation(mockLocation);
+    await locationsService.addLocation(mockLocation);
 
-    expect(location).toEqual(mockLocation);
+    expect(locationsRepository.upsert).toHaveBeenCalledWith(mockLocation);
     expect(forecastService.storeForecast).toHaveBeenCalledWith(mockLocation);
   });
 
-  it("should delete a location", async () => {
-    const mockLocation = { id: "1" };
-    locationsRepository.delete.mockResolvedValue(mockLocation);
+  it("should delete a location by ID", async () => {
+    const mockDto = { id: "1" };
+    locationsRepository.deleteById.mockResolvedValue(mockDto);
 
-    const location = await locationsService.deleteLocation("1");
+    const ok = await locationsService.deleteLocation(mockDto);
 
-    expect(location).toEqual(mockLocation);
+    expect(ok).toEqual(true);
   });
 });

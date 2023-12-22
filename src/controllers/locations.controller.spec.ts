@@ -1,12 +1,14 @@
 /* eslint-disable */
 // @ts-nocheck
 
+import { StatusCodes } from "http-status-codes";
 import LocationsController from "../controllers/locations.controller";
 import LocationsService from "../services/locations.service";
 
 describe("LocationsController", () => {
   let locationsService: jest.Mocked<LocationsService>;
   let locationsController: LocationsController;
+  let mockRes: Record<any, any>;
 
   beforeEach(() => {
     locationsService = {
@@ -17,6 +19,10 @@ describe("LocationsController", () => {
     locationsController = new LocationsController({
       locationService: locationsService,
     });
+    mockRes = {
+      json: jest.fn(),
+      status: jest.fn(() => mockRes),
+    };
   });
 
   it("should list all locations", async () => {
@@ -40,9 +46,6 @@ describe("LocationsController", () => {
     const mockReq: any = {
       body: { latitude: 10, longitude: 20 },
     };
-    const mockRes: any = {
-      json: jest.fn(),
-    };
 
     await locationsController.addLocation(mockReq, mockRes);
 
@@ -56,12 +59,9 @@ describe("LocationsController", () => {
     const mockReq: any = {
       query: { id: 1 },
     };
-    const mockRes: any = {
-      json: jest.fn(),
-    };
 
     await locationsController.deleteLocation(mockReq, mockRes);
 
-    expect(mockRes.json).toHaveBeenCalledWith(mockLocation);
+    expect(mockRes.status).toHaveBeenCalledWith(StatusCodes.NO_CONTENT);
   });
 });
