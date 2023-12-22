@@ -19,6 +19,7 @@ export default class ForecastController {
   @route("/")
   @GET()
   async listForecasts(req: Request, res: Response<ForecastResponse[]>) {
+    // TODO: error handling for failed request to open-meteo
     const forecasts = await this.forecastService.listForecasts();
     res.json(forecasts);
   }
@@ -26,6 +27,7 @@ export default class ForecastController {
   @route("/latest")
   @GET()
   async getLatest(req: Request, res: Response<ForecastResponse[]>) {
+    // TODO: error handling for failed request to open-meteo
     const forecasts = await this.forecastService.getLatest();
     res.json(forecasts);
   }
