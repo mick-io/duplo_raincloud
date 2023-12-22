@@ -1,28 +1,20 @@
-import mongoose, { Document, Schema } from "mongoose";
+import mongoose, { Schema } from 'mongoose';
 
-export interface IForecast extends Document {
-  latitude: number;
-  longitude: number;
-  generationtime_ms: number;
-  utc_offset_seconds: number;
-  timezone: string;
-  timezone_abbreviation: string;
-  elevation: number;
-  hourly_units: IHourlyUnits;
-  hourly: IHourly;
-}
+import { Forecast as ForecastType } from '../schemas/forecast.schema';
 
-interface IHourly {
-  time: string[];
-  temperature_2m: number[];
-}
+const DailyUnitsSchema = new Schema({
+  time: { type: String, required: true },
+  temperature_2m_max: { type: String, required: true },
+  temperature_2m_min: { type: String, required: true },
+});
 
-interface IHourlyUnits {
-  time: string;
-  temperature_2m: string;
-}
+const DailySchema = new Schema({
+  time: { type: [String], required: true },
+  temperature_2m_max: { type: [Number], required: true },
+  temperature_2m_min: { type: [Number], required: true },
+});
 
-const forecastSchema: Schema = new Schema({
+const ForecastSchema = new Schema({
   latitude: { type: Number, required: true },
   longitude: { type: Number, required: true },
   generationtime_ms: { type: Number, required: true },
@@ -30,14 +22,10 @@ const forecastSchema: Schema = new Schema({
   timezone: { type: String, required: true },
   timezone_abbreviation: { type: String, required: true },
   elevation: { type: Number, required: true },
-  hourly_units: {
-    time: { type: String, required: true },
-    temperature_2m: { type: String, required: true },
-  },
-  hourly: {
-    time: { type: [String], required: true },
-    temperature_2m: { type: [Number], required: true },
-  },
+  daily_units: { type: DailyUnitsSchema, required: true },
+  daily: { type: DailySchema, required: true },
 });
 
-export default mongoose.model<IForecast>("Forecast", forecastSchema);
+const Forecast = mongoose.model<ForecastType>("Forecast", ForecastSchema);
+
+export default Forecast;

@@ -2,6 +2,7 @@ import axios from "axios";
 
 import { ConfigType } from "../config";
 import ForecastRepository from "../repositories/forecast.repository";
+import { ForecastSchema } from "../schemas/forecast.schema";
 import { AddLocationDTO } from "../schemas/location.schema";
 
 interface IDependencies {
@@ -11,11 +12,11 @@ interface IDependencies {
 
 export default class ForecastService {
   private readonly config;
-  private readonly forecasts;
+  private readonly forecastsRepository;
 
   constructor({ config, forecastRepository }: IDependencies) {
     this.config = config;
-    this.forecasts = forecastRepository;
+    this.forecastsRepository = forecastRepository;
   }
 
   async getLatest() {
@@ -24,13 +25,26 @@ export default class ForecastService {
   }
 
   async listForecasts() {
-    return this.forecasts.list();
+    const docs = await this.forecastsRepository.list();
+    const forecasts = docs.map((doc) => doc.toObject({ versionKey: false }));
+
+    return forecasts.map(({ latitude, longitude, daily, daily_units }) => {
+      const { temperature_2m_max, temperature_2m_min, time } = daily;
+
+      const forecast = time.map((time, i) => {
+        const high = temperature_2m_max[i] + daily_units.temperature_2m_max;
+        const low = temperature_2m_min[i] + daily_units.temperature_2m_min;
+        return { time, high, low };
+      });
+
+      return { latitude, longitude, forecast };
+    });
   }
 
   async storeForecast(location: AddLocationDTO) {
     const { latitude, longitude } = location;
     const forecast = await this.fetchForecast(latitude, longitude);
-    return this.forecasts.upsert(forecast);
+    return this.forecastsRepository.upsert(forecast);
   }
 
   private async updateForecasts() {
@@ -45,15 +59,18 @@ export default class ForecastService {
 
   private async fetchForecast(latitude: number, longitude: number) {
     const url = new URL(this.config.openMeteoBaseURL + "/forecast");
-
     const params = new URLSearchParams({
       latitude: latitude.toString(),
       longitude: longitude.toString(),
-      hourly: "temperature_2m",
+      daily: "temperature_2m_max,temperature_2m_min",
+      temperature_unit: "fahrenheit",
+      wind_speed_unit: "mph",
+      timezone: "auto",
     });
 
     url.search = params.toString();
-    const resp = await axios.get(url.toString(), {});
-    return resp.data;
+    const resp = await axios.get(url.toString());
+
+    return ForecastSchema.parse(resp.data);
   }
 }

@@ -1,13 +1,15 @@
 import * as z from "zod";
 
-const HourlyUnitsSchema = z.object({
+export const DailyUnitsSchema = z.object({
   time: z.string(),
-  temperature_2m: z.string(),
+  temperature_2m_max: z.string(),
+  temperature_2m_min: z.string(),
 });
 
-const HourlySchema = z.object({
+export const DailySchema = z.object({
   time: z.array(z.string()),
-  temperature_2m: z.array(z.number()),
+  temperature_2m_max: z.array(z.number()),
+  temperature_2m_min: z.array(z.number()),
 });
 
 export const ForecastSchema = z.object({
@@ -18,8 +20,10 @@ export const ForecastSchema = z.object({
   timezone: z.string(),
   timezone_abbreviation: z.string(),
   elevation: z.number(),
-  hourly_units: HourlyUnitsSchema,
-  hourly: HourlySchema,
+  daily_units: DailyUnitsSchema,
+  daily: DailySchema,
 });
 
-export type AddForecastDTO = z.infer<typeof ForecastSchema>;
+export type DailyUnits = z.infer<typeof DailyUnitsSchema>;
+export type Daily = z.infer<typeof DailySchema>;
+export type Forecast = z.infer<typeof ForecastSchema>;

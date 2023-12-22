@@ -1,5 +1,9 @@
 import LocationsRepository from "../repositories/locations.repository";
-import { AddLocationDTO, DeleteLocationDTO } from "../schemas/location.schema";
+import {
+  AddLocationDTO,
+  DeleteLocationDTO,
+  ListLocationDTO,
+} from "../schemas/location.schema";
 import ForecastService from "./forecast.service";
 
 interface IDependencies {
@@ -16,13 +20,15 @@ export default class LocationsService {
     this.forecastService = forecastService;
   }
 
-  async listLocations(dto: Partial<AddLocationDTO>) {
-    return this.locations.list(dto);
+  async listLocations(dto: ListLocationDTO) {
+    const docs = await this.locations.list(dto);
+    return docs.map((doc) => doc.toObject({ versionKey: false }));
   }
 
   async addLocation(dto: AddLocationDTO) {
     await this.forecastService.storeForecast(dto);
-    return this.locations.upsert(dto);
+    const doc = await this.locations.upsert(dto);
+    return doc.toObject({ versionKey: false });
   }
 
   async deleteLocation(dto: DeleteLocationDTO) {

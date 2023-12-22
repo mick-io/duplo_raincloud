@@ -44,8 +44,18 @@ export default class LocationsController {
     res: Response,
   ) {
     const { latitude, longitude } = req.body;
-    const loc = await this.locationService.addLocation({ latitude, longitude });
-    res.json(loc);
+    try {
+      const loc = await this.locationService.addLocation({
+        latitude,
+        longitude,
+      });
+      res.json(loc);
+    } catch (error) {
+      // TODO: Create and check for custom error if OpenMeteo call fails.
+      res
+        .status(StatusCodes.INTERNAL_SERVER_ERROR)
+        .json(ReasonPhrases.INTERNAL_SERVER_ERROR);
+    }
   }
 
   @route("/")
