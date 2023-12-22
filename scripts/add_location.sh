@@ -10,7 +10,4 @@ fi
 LATITUDE=${1:-50}
 LONGITUDE=${2:-50}
 
-curl -i -X POST \
-    -H "Content-Type: application/json" \
-    -d "{\"latitude\":$LATITUDE, \"longitude\":$LONGITUDE}" \
-    "http://localhost:4000/locations"
+http POST http://localhost:4000/locations latitude=$LATITUDE longitude=$LONGITUDE

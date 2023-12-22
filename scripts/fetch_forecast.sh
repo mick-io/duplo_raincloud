@@ -1,3 +1,3 @@
 #!/bin/bash
 
-curl -i -X GET "http://localhost:4000/forecast/"
+http GET http://localhost:4000/forecast/
