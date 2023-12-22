@@ -1,7 +1,7 @@
 import { ObjectId } from "mongodb";
 
+import { AddLocationDTO, ListLocationDTO } from "../dtos";
 import Location from "../models/location.model";
-import { AddLocationDTO, ListLocationDTO } from "../schemas/location.schema";
 
 export default class LocationsRepository {
   async upsert(location: AddLocationDTO) {

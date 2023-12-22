@@ -2,13 +2,16 @@ import { before, DELETE, GET, POST, route } from "awilix-express";
 import { Request, Response } from "express";
 import { ReasonPhrases, StatusCodes } from "http-status-codes";
 
-import validate from "../middleware/validation.middleware";
 import {
   AddLocationDTO,
-  AddLocationDTOSchema,
   DeleteLocationDTO,
-  DeleteLocationDTOSchema,
+  ForecastResponse,
   ListLocationDTO,
+} from "../dtos";
+import validate from "../middleware/validation.middleware";
+import {
+  AddLocationDTOSchema,
+  DeleteLocationDTOSchema,
   ListLocationDTOSchema,
 } from "../schemas/location.schema";
 import LocationsService from "../services/locations.service";
@@ -41,21 +44,25 @@ export default class LocationsController {
   @before([validate(AddLocationDTOSchema, "body")])
   async addLocation(
     req: Request<unknown, unknown, AddLocationDTO>,
-    res: Response,
+    res: Response<ForecastResponse | string>,
   ) {
-    const { latitude, longitude } = req.body;
     try {
-      const loc = await this.locationService.addLocation({
+      const { latitude, longitude } = req.body;
+      const forecast = await this.locationService.addLocation({
         latitude,
         longitude,
       });
-      res.json(loc);
+
+      if (forecast) {
+        return res.status(StatusCodes.CREATED).json(forecast);
+      }
     } catch (error) {
-      // TODO: Create and check for custom error if OpenMeteo call fails.
-      res
-        .status(StatusCodes.INTERNAL_SERVER_ERROR)
-        .json(ReasonPhrases.INTERNAL_SERVER_ERROR);
+      // TODO: Create custom error for failed OpenMeteo calls.
+      console.error(error);
     }
+    return res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json(ReasonPhrases.INTERNAL_SERVER_ERROR);
   }
 
   @route("/")

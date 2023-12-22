@@ -1,6 +1,8 @@
 import { GET, route } from "awilix-express";
-import ForecastService from "../services/forecast.service";
 import { Request, Response } from "express";
+
+import { ForecastResponse } from "../dtos";
+import ForecastService from "../services/forecast.service";
 
 interface IDependencies {
   forecastService: ForecastService;
@@ -16,14 +18,14 @@ export default class ForecastController {
 
   @route("/")
   @GET()
-  async listForecasts(req: Request, res: Response) {
+  async listForecasts(req: Request, res: Response<ForecastResponse[]>) {
     const forecasts = await this.forecastService.listForecasts();
     res.json(forecasts);
   }
 
   @route("/latest")
   @GET()
-  async getLatest(req: Request, res: Response) {
+  async getLatest(req: Request, res: Response<ForecastResponse[]>) {
     const forecasts = await this.forecastService.getLatest();
     res.json(forecasts);
   }

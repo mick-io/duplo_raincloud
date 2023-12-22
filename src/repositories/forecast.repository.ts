@@ -1,8 +1,8 @@
+import { ForecastDTO } from "../dtos";
 import Forecast from "../models/forecast.model";
-import { ForecastDTO as ForecastType } from "../schemas/forecast.schema";
 
 export default class ForecastRepository {
-  async upsert(forecast: ForecastType) {
+  async upsert(forecast: ForecastDTO) {
     const { latitude, longitude } = forecast;
     const doc = await Forecast.findOneAndUpdate(
       { latitude, longitude },

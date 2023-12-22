@@ -1,9 +1,9 @@
 import axios from "axios";
 
 import { ConfigType } from "../config";
+import { AddLocationDTO, ForecastDTO, ForecastResponse } from "../dtos";
 import ForecastRepository from "../repositories/forecast.repository";
-import { ForecastDTO, ForecastSchema } from "../schemas/forecast.schema";
-import { AddLocationDTO } from "../schemas/location.schema";
+import { ForecastDTOSchema } from "../schemas/forecast.schema";
 
 interface IDependencies {
   config: ConfigType;
@@ -70,10 +70,10 @@ export default class ForecastService {
     url.search = params.toString();
     const resp = await axios.get<ForecastDTO>(url.toString());
 
-    return ForecastSchema.parse(resp.data);
+    return ForecastDTOSchema.parse(resp.data);
   }
 
-  private formatForecast(dto: ForecastDTO) {
+  private formatForecast(dto: ForecastDTO): ForecastResponse {
     const { latitude, longitude, daily, daily_units } = dto;
     const { temperature_2m_max, temperature_2m_min, time } = daily;
 

@@ -31,7 +31,3 @@ export const DeleteLocationDTOSchema = z.union([
       .refine((id) => ObjectId.isValid(id), "ID must be a valid ObjectId"),
   }),
 ]);
-
-export type AddLocationDTO = z.infer<typeof AddLocationDTOSchema>;
-export type ListLocationDTO = z.infer<typeof ListLocationDTOSchema>;
-export type DeleteLocationDTO = z.infer<typeof DeleteLocationDTOSchema>;

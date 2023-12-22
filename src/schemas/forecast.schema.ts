@@ -12,7 +12,7 @@ export const DailySchema = z.object({
   temperature_2m_min: z.array(z.number()),
 });
 
-export const ForecastSchema = z.object({
+export const ForecastDTOSchema = z.object({
   latitude: z.number(),
   longitude: z.number(),
   generationtime_ms: z.number(),
@@ -24,6 +24,5 @@ export const ForecastSchema = z.object({
   daily: DailySchema,
 });
 
-export type DailyUnits = z.infer<typeof DailyUnitsSchema>;
-export type Daily = z.infer<typeof DailySchema>;
-export type ForecastDTO = z.infer<typeof ForecastSchema>;
+// type DailyUnits = z.infer<typeof DailyUnitsSchema>;
+// type Daily = z.infer<typeof DailySchema>;

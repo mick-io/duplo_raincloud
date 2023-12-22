@@ -1,6 +1,6 @@
-import mongoose, { Schema } from 'mongoose';
+import mongoose, { Schema } from "mongoose";
 
-import { ForecastDTO as ForecastType } from '../schemas/forecast.schema';
+import { ForecastDTO } from "../dtos";
 
 const DailyUnitsSchema = new Schema({
   time: { type: String, required: true },
@@ -26,6 +26,6 @@ const ForecastSchema = new Schema({
   daily: { type: DailySchema, required: true },
 });
 
-const Forecast = mongoose.model<ForecastType>("Forecast", ForecastSchema);
+const Forecast = mongoose.model<ForecastDTO>("Forecast", ForecastSchema);
 
 export default Forecast;
