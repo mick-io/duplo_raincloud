@@ -1,41 +1,69 @@
-import { AddLocationDTO, DeleteLocationDTO, ListLocationDTO } from "../dtos";
-import { ILocation } from "../models/location.model";
-import LocationsRepository from "../repositories/locations.repository";
+import { FilterQuery, Types } from "mongoose";
+
+import LocationModel from "../database/models/location.model";
+import { LocationLeanDocument } from "../types/database";
+import { Location } from "../types/location";
+import ForecastService from "./forecast.service";
+import { InvalidArgumentError } from "../errors";
 
 interface IDependencies {
-  locationsRepository: LocationsRepository;
+  locationRepository: typeof LocationModel;
+  forecastService: ForecastService;
 }
 
 export default class LocationsService {
   private readonly locations;
+  private readonly forecastService;
 
-  constructor({ locationsRepository }: IDependencies) {
-    this.locations = locationsRepository;
+  constructor({ locationRepository, forecastService }: IDependencies) {
+    this.locations = locationRepository;
+    this.forecastService = forecastService;
   }
 
-  async listLocations(dto: ListLocationDTO = {}) {
-    const docs = await this.locations.list(dto);
-    return docs.map((doc) => doc.toObject({ versionKey: false }));
+  async listLocations(
+    filter: FilterQuery<Location> = {},
+  ): Promise<LocationLeanDocument[]> {
+    const locations = await this.locations
+      .find(filter)
+      .lean({ versionKey: false });
+    return locations;
   }
 
-  async addLocation(dto: AddLocationDTO): Promise<ILocation | null> {
-    const doc = await this.locations.upsert(dto);
-    return doc.toObject({ versionKey: false });
-  }
+  async storeLocation(
+    location: Location,
+  ): Promise<LocationLeanDocument | null> {
+    const { latitude, longitude, ...rest } = location;
+    const filter = { latitude, longitude };
+    const update = { ...rest };
 
-  async deleteLocation(dto: DeleteLocationDTO) {
-    let ok;
+    const doc = await this.locations
+      .findOneAndUpdate(filter, update, {
+        new: true,
+        upsert: true,
+        runValidators: true,
+      })
+      .lean({ versionKey: false });
 
-    if ("id" in dto) {
-      ok = Boolean(await this.locations.deleteById(dto.id));
-      return ok;
+    try {
+      await this.forecastService.fetchAndStoreForecast(doc);
+    } catch (error) {
+      this.locations.deleteOne({ _id: doc._id });
+      throw error;
     }
 
-    if ("latitude" in dto && "longitude" in dto) {
-      ok = Boolean(await this.locations.delete(dto.latitude, dto.longitude));
-      return ok;
-    }
+    return doc;
+  }
 
-    throw new Error("Invalid DeleteLocationDTO");
+  async deleteLocation(args: Location): Promise<boolean> {
+    const { deletedCount } = await this.locations.deleteOne(args);
+    return deletedCount > 0;
+  }
+
+  async deleteLocationById(id: string): Promise<boolean> {
+    if (!Types.ObjectId.isValid(id)) {
+      throw new InvalidArgumentError("Invalid ID");
+    }
+    const { deletedCount } = await this.locations.deleteOne({ _id: id });
+    return deletedCount > 0;
   }
 }

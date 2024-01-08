@@ -1,13 +1,14 @@
 import mongoose, { Schema } from "mongoose";
 
-export interface ILocation {
-  latitude: number;
-  longitude: number;
-}
+import { LocationDocument } from "../../types/database";
 
 const locationSchema: Schema = new Schema({
   latitude: { type: Number, required: true },
   longitude: { type: Number, required: true },
 });
 
-export default mongoose.model<ILocation>("Location", locationSchema);
+const LocationModel = mongoose.model<LocationDocument>(
+  "Location",
+  locationSchema,
+);
+export default LocationModel;

@@ -3,19 +3,21 @@ import { asClass, asValue, createContainer } from "awilix";
 import config, { ConfigType } from "./config";
 import ForecastController from "./controllers/forecast.controller";
 import LocationsController from "./controllers/locations.controller";
-import ForecastRepository from "./repositories/forecast.repository";
-import LocationsRepository from "./repositories/locations.repository";
+import ForecastModel from "./database/models/forecast.model";
+import LocationModel from "./database/models/location.model";
 import ForecastService from "./services/forecast.service";
 import LocationsService from "./services/locations.service";
+import WeatherApiService from "./services/weather-api.service";
 
 interface IContainer {
   config: ConfigType;
   locationController: LocationsController;
   locationService: LocationsService;
-  locationsRepository: LocationsRepository;
   forecastController: ForecastController;
   forecastService: ForecastService;
-  forecastRepository: ForecastRepository;
+  weatherApiService: WeatherApiService;
+  forecastRepository: typeof ForecastModel;
+  locationRepository: typeof LocationModel;
 }
 
 const container = createContainer<IContainer>();
@@ -23,11 +25,12 @@ const container = createContainer<IContainer>();
 container.register({
   config: asValue(config),
   locationController: asClass(LocationsController),
-  locationService: asClass(LocationsService).scoped(),
-  locationsRepository: asClass(LocationsRepository).scoped(),
   forecastController: asClass(ForecastController),
+  locationService: asClass(LocationsService).scoped(),
   forecastService: asClass(ForecastService).scoped(),
-  forecastRepository: asClass(ForecastRepository).scoped(),
+  weatherApiService: asClass(WeatherApiService).scoped(),
+  forecastRepository: asValue(ForecastModel),
+  locationRepository: asValue(LocationModel),
 });
 
 export default container;

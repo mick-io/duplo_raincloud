@@ -1,10 +1,10 @@
 import mongoose from "mongoose";
-import container from "./container";
+import container from "../container";
 
 const config = container.resolve("config");
 
 mongoose
-  .connect(config.mongoURI, { connectTimeoutMS: 10000 })
+  .connect(config.mongoURI, { connectTimeoutMS: 5000 })
   .then(() => {
     console.info("Database connected successfully");
   })

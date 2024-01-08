@@ -1,83 +1,116 @@
 /* eslint-disable */
 // @ts-nocheck
+import { MongoMemoryServer } from "mongodb-memory-server";
+import mongoose, { isValidObjectId } from "mongoose";
 
+import { faker } from "@faker-js/faker";
+
+import ForecastModel from "../database/models/forecast.model";
+import LocationModel from "../database/models/location.model";
 import ForecastService from "../services/forecast.service";
-import ForecastRepository from "../repositories/forecast.repository";
-import { ForecastDTO } from "../dtos";
-import { ConfigType } from "../config";
+import { Forecast } from "../types/forecast";
+import LocationsService from "./locations.service";
+import WeatherApiService from "./weather-api.service";
 
-describe("ForecastService", () => {
+describe("LocationService", () => {
+  let mongoServer: MongoMemoryServer;
   let forecastService: ForecastService;
-  let mockForecastRepository: jest.Mocked<ForecastRepository>;
-  let mockLocationsService: jest.Mocked<LocationsService>;
-  let mockConfig: ConfigType;
+  let locationService: jest.Mocked<LocationsService>;
+  let weatherApiService: jest.Mocked<WeatherApiService>;
 
-  beforeEach(() => {
-    mockForecastRepository = {
-      upsert: jest.fn(),
-      find: jest.fn(),
-    } as any;
+  beforeAll(async () => {
+    mongoServer = await MongoMemoryServer.create();
+    const mongoUri = mongoServer.getUri();
+    await mongoose.connect(mongoUri);
 
-    mockLocationsService = {
+    locationService = {
       listLocations: jest.fn(),
-    } as any;
+      storeLocation: jest.fn(),
+      deleteLocation: jest.fn(),
+      deleteLocationById: jest.fn(),
+    };
 
-    mockConfig = {} as ConfigType;
+    weatherApiService = { fetchHourlyForecast: jest.fn() };
 
     forecastService = new ForecastService({
-      config: mockConfig,
-      forecastRepository: mockForecastRepository,
-      locationService: mockLocationsService,
+      locationService,
+      weatherApiService,
+      forecastRepository: ForecastModel,
+      locationRepository: LocationModel,
     });
   });
 
-  describe("getLatest", () => {
-    it("should fetch the latest forecast for each location", async () => {
-      const locations = [{ latitude: 1, longitude: 1 }];
-      const forecast = { temperature: 20 };
-      const formattedForecast = { temperature: "20F" };
-      mockLocationsService.listLocations.mockResolvedValue(locations);
-      forecastService.fetchForecast = jest.fn().mockResolvedValue(forecast);
-      mockForecastRepository.upsert.mockResolvedValue({
-        toObject: () => forecast,
+  beforeEach(async () => {
+    await ForecastModel.deleteMany({});
+  });
+
+  afterAll(async () => {
+    await mongoose.disconnect();
+    await mongoServer.stop();
+  });
+
+  describe("fetchForecast", () => {
+    it("should return a forecast", async () => {
+      const latitude = faker.location.latitude();
+      const longitude = faker.location.longitude();
+
+      weatherApiService.fetchHourlyForecast.mockResolvedValue({
+        latitude,
+        longitude,
+        high: 51,
       });
-      forecastService.formatForecast = jest
-        .fn()
-        .mockReturnValue(formattedForecast);
 
-      const result = await forecastService.getLatest();
+      const forecast = await forecastService.fetchForecast({
+        latitude,
+        longitude,
+      });
 
-      expect(mockLocationsService.listLocations).toHaveBeenCalled();
-      expect(forecastService.fetchForecast).toHaveBeenCalledWith(1, 1);
-      expect(mockForecastRepository.upsert).toHaveBeenCalledWith(forecast);
-      expect(forecastService.formatForecast).toHaveBeenCalledWith(forecast);
-      expect(result).toEqual([formattedForecast]);
+      expect(forecast).toEqual({ latitude, longitude, high: 51 });
     });
   });
 
-  describe("listForecasts", () => {
-    it("should list forecasts for each location", async () => {
-      const locations = [{ latitude: 1, longitude: 1 }];
-      const forecast = { temperature: 20 };
-      const formattedForecast = { temperature: "20F" };
-      mockLocationsService.listLocations.mockResolvedValue(locations);
-      mockForecastRepository.find.mockResolvedValue(null);
-      forecastService.fetchForecast = jest.fn().mockResolvedValue(forecast);
-      mockForecastRepository.upsert.mockResolvedValue({
-        toObject: () => forecast,
-      });
-      forecastService.formatForecast = jest
-        .fn()
-        .mockReturnValue(formattedForecast);
+  describe("storeForecast", () => {
+    it("should store a forecast", async () => {
+      const latitude = faker.location.latitude();
+      const longitude = faker.location.longitude();
+      const forecast = { latitude, longitude };
 
-      const result = await forecastService.listForecasts();
+      const doc = await forecastService.storeForecast(
+        { latitude, longitude },
+        forecast,
+      );
 
-      expect(mockLocationsService.listLocations).toHaveBeenCalled();
-      expect(mockForecastRepository.find).toHaveBeenCalledWith(1, 1);
-      expect(forecastService.fetchForecast).toHaveBeenCalledWith(1, 1);
-      expect(mockForecastRepository.upsert).toHaveBeenCalledWith(forecast);
-      expect(forecastService.formatForecast).toHaveBeenCalledWith(forecast);
-      expect(result).toEqual([formattedForecast]);
+      expect(doc.latitude).toEqual(latitude);
+      expect(doc.longitude).toEqual(longitude);
+      expect(isValidObjectId(doc._id)).toBe(true);
+    });
+
+    it("should update a forecast", async () => {
+      const latitude = faker.location.latitude();
+      const longitude = faker.location.longitude();
+      const forecast: Partial<Forecast> = {
+        latitude,
+        longitude,
+        elevation: 100,
+      };
+
+      await forecastService.storeForecast({ latitude, longitude }, forecast);
+
+      const newForecast: Partial<Forecast> = {
+        latitude,
+        longitude,
+        elevation: 200,
+      };
+
+      const doc = await forecastService.storeForecast(
+        { latitude, longitude },
+        newForecast,
+      );
+
+      expect(doc.latitude).toEqual(latitude);
+      expect(doc.longitude).toEqual(longitude);
+      expect(doc.elevation).toEqual(200);
+      expect(isValidObjectId(doc._id)).toBe(true);
     });
   });
 });

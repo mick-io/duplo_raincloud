@@ -1,4 +1,4 @@
-import "./db";
+import "./database";
 
 import app from "./app";
 import container from "./container";

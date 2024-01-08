@@ -11,7 +11,10 @@ import { ZodError, ZodSchema } from "zod";
  * @param {string} field - The field to validate (either 'body' or 'query').
  * @returns {Function} A middleware function that validates the request data.
  */
-function validate(schema: ZodSchema<unknown>, field: "body" | "query") {
+function validate(
+  schema: ZodSchema<unknown>,
+  field: "body" | "query" | "params",
+) {
   return (req: Request, res: Response, next: NextFunction) => {
     try {
       schema.parse(req[field]);

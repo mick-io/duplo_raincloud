@@ -1,6 +1,5 @@
 import mongoose, { Schema } from "mongoose";
-
-import { ForecastDTO } from "../dtos";
+import { OpenMeteoHourlyTempResponseBody } from "../../types/api";
 
 const DailyUnitsSchema = new Schema({
   time: { type: String, required: true },
@@ -26,6 +25,9 @@ const ForecastSchema = new Schema({
   daily: { type: DailySchema, required: true },
 });
 
-const Forecast = mongoose.model<ForecastDTO>("Forecast", ForecastSchema);
+const ForecastModel = mongoose.model<OpenMeteoHourlyTempResponseBody>(
+  "Forecast",
+  ForecastSchema,
+);
 
-export default Forecast;
+export default ForecastModel;

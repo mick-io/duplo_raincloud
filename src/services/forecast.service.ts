@@ -1,85 +1,74 @@
-import axios from "axios";
-
-import { ConfigType } from "../config";
-import { ForecastDTO, ForecastResponse } from "../dtos";
-import ForecastRepository from "../repositories/forecast.repository";
-import { ForecastDTOSchema } from "../schemas/forecast.schema";
-import LocationsService from "./locations.service";
+import ForecastModel from "../database/models/forecast.model";
+import LocationModel from "../database/models/location.model";
+import { ForecastLeanDocument } from "../types/database";
+import { Forecast } from "../types/forecast";
+import { Location } from "../types/location";
+import WeatherApiService from "./weather-api.service";
 
 interface IDependencies {
-  config: ConfigType;
-  forecastRepository: ForecastRepository;
-  locationService: LocationsService;
+  locationRepository: typeof LocationModel;
+  forecastRepository: typeof ForecastModel;
+  weatherApiService: WeatherApiService;
 }
 
 export default class ForecastService {
-  private readonly config;
+  private readonly locationRepository;
   private readonly forecastsRepository;
-  private readonly locationService;
+  private readonly weatherApiService;
 
-  constructor({ config, forecastRepository, locationService }: IDependencies) {
-    this.config = config;
+  constructor({
+    forecastRepository,
+    locationRepository,
+    weatherApiService,
+  }: IDependencies) {
+    this.locationRepository = locationRepository;
     this.forecastsRepository = forecastRepository;
-    this.locationService = locationService;
+    this.weatherApiService = weatherApiService;
   }
 
-  async getLatest() {
-    const locations = await this.locationService.listLocations();
-
-    const promises = locations.map(async ({ latitude, longitude }) => {
-      const forecast = await this.fetchForecast(latitude, longitude);
-      const doc = await this.forecastsRepository.upsert(forecast);
-      return doc.toObject({ versionKey: false });
-    });
-
-    const forecast = await Promise.all(promises);
-    return forecast.map((forecast) => this.formatForecast(forecast));
+  async fetchForecast(location: Location): Promise<Forecast> {
+    return await this.weatherApiService.fetchHourlyForecast(location);
   }
 
-  async listForecasts() {
-    const locations = await this.locationService.listLocations();
+  async storeForecast(
+    location: Location,
+    forecast: Forecast,
+  ): Promise<ForecastLeanDocument> {
+    const doc = await this.forecastsRepository
+      .findOneAndUpdate(
+        { latitude: location.latitude, longitude: location.longitude },
+        forecast,
+        { new: true, upsert: true },
+      )
+      .lean({ versionKey: false });
+    return doc;
+  }
 
-    const promises = locations.map(async ({ latitude, longitude }) => {
-      let doc = await this.forecastsRepository.find(latitude, longitude);
+  async fetchAndStoreForecast(
+    location: Location,
+  ): Promise<ForecastLeanDocument> {
+    const forecast = await this.fetchForecast(location);
+    return await this.storeForecast(location, forecast);
+  }
 
-      if (!doc) {
-        const forecast = await this.fetchForecast(latitude, longitude);
-        doc = await this.forecastsRepository.upsert(forecast);
-      }
-      return doc.toObject({ versionKey: false });
+  async getLatest(): Promise<ForecastLeanDocument[]> {
+    const locations = await this.locationRepository.find().lean();
+    const promises = locations.map(async (location) => {
+      return await this.fetchAndStoreForecast(location);
     });
-
     const forecasts = await Promise.all(promises);
-    return forecasts.map((forecast) => this.formatForecast(forecast));
+    return forecasts;
   }
 
-  private async fetchForecast(latitude: number, longitude: number) {
-    const url = new URL(this.config.openMeteoBaseURL + "/forecast");
-    const params = new URLSearchParams({
-      latitude: latitude.toString(),
-      longitude: longitude.toString(),
-      daily: "temperature_2m_max,temperature_2m_min",
-      temperature_unit: "fahrenheit",
-      wind_speed_unit: "mph",
-      timezone: "auto",
+  async listForecasts(): Promise<ForecastLeanDocument[]> {
+    const locations = await this.locationRepository.find().lean();
+    const promises = locations.map(async (location) => {
+      const doc = await this.forecastsRepository
+        .findOne({ latitude: location.latitude, longitude: location.longitude })
+        .lean({ versionKey: false });
+      return doc;
     });
-
-    url.search = params.toString();
-    const resp = await axios.get<ForecastDTO>(url.toString());
-
-    return ForecastDTOSchema.parse(resp.data);
-  }
-
-  private formatForecast(dto: ForecastDTO): ForecastResponse {
-    const { latitude, longitude, daily, daily_units } = dto;
-    const { temperature_2m_max, temperature_2m_min, time } = daily;
-
-    const forecast = time.map((time, i) => {
-      const high = temperature_2m_max[i] + daily_units.temperature_2m_max;
-      const low = temperature_2m_min[i] + daily_units.temperature_2m_min;
-      return { time, high, low };
-    });
-
-    return { latitude, longitude, forecast };
+    const forecast = await Promise.all(promises);
+    return forecast.filter((doc) => doc !== null) as ForecastLeanDocument[];
   }
 }

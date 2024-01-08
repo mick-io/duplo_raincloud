@@ -1,16 +1,30 @@
 import { before, DELETE, GET, POST, route } from "awilix-express";
 import { Request, Response } from "express";
 import { ReasonPhrases, StatusCodes } from "http-status-codes";
+import { MongooseError } from "mongoose";
 
-import { AddLocationDTO, DeleteLocationDTO, ListLocationDTO } from "../dtos";
+import { ExternalApiError, InvalidArgumentError } from "../errors";
 import validate from "../middleware/validation.middleware";
 import {
-  AddLocationDTOSchema,
-  DeleteLocationDTOSchema,
-  ListLocationDTOSchema,
-} from "../schemas/location.schema";
+  DeleteLocationByIdRequestParamsSchema,
+  DeleteLocationRequestQuerySchema,
+  GetLocationsRequestBodySchema,
+  PostLocationRequestBodySchema,
+} from "../schemas/request.schema";
 import LocationsService from "../services/locations.service";
-import { ILocation } from "../models/location.model";
+import {
+  DeleteLocationByIdRequestParams,
+  DeleteLocationRequestQuery,
+  GetLocationsRequestBody,
+  PostLocationRequestBody,
+} from "../types/request";
+import {
+  DeleteLocationResponseBody,
+  GetLocationErrorResponse,
+  GetLocationsResponseBody,
+  PostLocationErrorResponse,
+  PostLocationResponseBody,
+} from "../types/response";
 
 interface IDependencies {
   locationService: LocationsService;
@@ -26,30 +40,55 @@ export default class LocationsController {
 
   @route("/")
   @GET()
-  @before([validate(ListLocationDTOSchema, "query")])
+  @before([validate(GetLocationsRequestBodySchema, "query")])
   async listLocations(
-    req: Request<unknown, unknown, unknown, ListLocationDTO>,
-    res: Response,
+    req: Request<unknown, unknown, unknown, GetLocationsRequestBody>,
+    res: Response<GetLocationsResponseBody | GetLocationErrorResponse>,
   ) {
-    const locations = await this.locationService.listLocations(req.query);
-    res.json(locations);
+    try {
+      const locations = await this.locationService.listLocations(req.query);
+      if (locations) {
+        return res.status(StatusCodes.OK).json(locations);
+      }
+    } catch (error) {
+      if (error instanceof MongooseError) {
+        return res
+          .status(StatusCodes.SERVICE_UNAVAILABLE)
+          .json(ReasonPhrases.SERVICE_UNAVAILABLE);
+      }
+      return res
+        .status(StatusCodes.INTERNAL_SERVER_ERROR)
+        .json(ReasonPhrases.INTERNAL_SERVER_ERROR);
+    }
   }
 
   @route("/")
   @POST()
-  @before([validate(AddLocationDTOSchema, "body")])
+  @before([validate(PostLocationRequestBodySchema, "body")])
   async addLocation(
-    req: Request<unknown, unknown, AddLocationDTO>,
-    res: Response<ILocation | string>,
+    req: Request<unknown, unknown, PostLocationRequestBody>,
+    res: Response<PostLocationResponseBody | PostLocationErrorResponse>,
   ) {
     const { latitude, longitude } = req.body;
-    const location = await this.locationService.addLocation({
-      latitude,
-      longitude,
-    });
+    try {
+      const location = await this.locationService.storeLocation({
+        latitude,
+        longitude,
+      });
 
-    if (location) {
-      return res.status(StatusCodes.CREATED).json(location);
+      if (location) {
+        return res.status(StatusCodes.CREATED).json(location);
+      }
+    } catch (error) {
+      if (error instanceof MongooseError) {
+        return res
+          .status(StatusCodes.SERVICE_UNAVAILABLE)
+          .json(ReasonPhrases.SERVICE_UNAVAILABLE);
+      }
+
+      if (error instanceof ExternalApiError) {
+        return res.status(StatusCodes.BAD_GATEWAY).json(error.message);
+      }
     }
     return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
@@ -58,29 +97,53 @@ export default class LocationsController {
 
   @route("/")
   @DELETE()
-  @before([validate(DeleteLocationDTOSchema, "query")])
+  @before([validate(DeleteLocationRequestQuerySchema, "query")])
   async deleteLocation(
-    req: Request<unknown, unknown, unknown, DeleteLocationDTO>,
-    res: Response,
+    req: Request<unknown, unknown, unknown, DeleteLocationRequestQuery>,
+    res: Response<DeleteLocationResponseBody>,
   ) {
     try {
-      let status = StatusCodes.NO_CONTENT;
-      let message = ReasonPhrases.NO_CONTENT;
-
       const ok = await this.locationService.deleteLocation(req.query);
-
       if (!ok) {
-        status = StatusCodes.NOT_FOUND;
-        message = ReasonPhrases.NOT_FOUND;
+        return res.status(StatusCodes.NOT_FOUND).json(ReasonPhrases.NOT_FOUND);
+      }
+      return res.status(StatusCodes.NO_CONTENT).json(ReasonPhrases.NO_CONTENT);
+    } catch (error) {
+      if (error instanceof MongooseError) {
+        return res
+          .status(StatusCodes.SERVICE_UNAVAILABLE)
+          .json(ReasonPhrases.SERVICE_UNAVAILABLE);
+      }
+      return res
+        .status(StatusCodes.INTERNAL_SERVER_ERROR)
+        .json(ReasonPhrases.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  @route("/:id")
+  @DELETE()
+  @before([validate(DeleteLocationByIdRequestParamsSchema, "params")])
+  async deleteLocationById(
+    req: Request<DeleteLocationByIdRequestParams, unknown, unknown, unknown>,
+    res: Response<DeleteLocationResponseBody>,
+  ) {
+    try {
+      const { id } = req.params;
+      const ok = await this.locationService.deleteLocationById(id);
+      if (!ok) {
+        return res.status(StatusCodes.NOT_FOUND).json(ReasonPhrases.NOT_FOUND);
+      }
+      return res.status(StatusCodes.NO_CONTENT).json(ReasonPhrases.NO_CONTENT);
+    } catch (error) {
+      if (error instanceof MongooseError) {
+        return res
+          .status(StatusCodes.SERVICE_UNAVAILABLE)
+          .json(ReasonPhrases.SERVICE_UNAVAILABLE);
       }
 
-      res.status(status).json(message);
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
-      if (error.message) {
-        res.status(StatusCodes.BAD_REQUEST).json(ReasonPhrases.BAD_REQUEST);
-      }
+      return res
+        .status(StatusCodes.INTERNAL_SERVER_ERROR)
+        .json(ReasonPhrases.INTERNAL_SERVER_ERROR);
     }
   }
 }
