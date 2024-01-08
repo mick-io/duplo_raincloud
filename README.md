@@ -1,7 +1,7 @@
 # DuploRaincloud
 
-Hello Duplolcloud employee! Thank you for taking the time to review my assessment project! These were the requirements
-I was given by:
+Hello Duplolcloud employee! Thank you for taking the time to review my assessment project! I was asked to complete the following 
+requirements within 48 hours:
 
 > The aim of this task is to build a simple API (backed by any kind of database). The application should be able to
 > store weather forecast data in the database, based on provided latitude and longitude - you can use
@@ -10,6 +10,10 @@ I was given by:
 > the database, and choose them to provide the newest weather forecast.
 
 I took some liberties concerning the shape of the returned forecast data as none was specified.
+
+### Improved Branch
+
+I've created a branch named `improved` which contains numerous changes to the application that I completed after the 48 hour deadline.
 
 ## Getting Started
 
