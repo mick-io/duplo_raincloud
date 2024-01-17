@@ -2,7 +2,6 @@ import { GET, route } from "awilix-express";
 import { Request, Response } from "express";
 import { StatusCodes } from "http-status-codes";
 
-import { isDatabaseConnected } from "../database/util";
 import { IWeatherApiService } from "../types/services";
 import mongoose from "mongoose";
 
