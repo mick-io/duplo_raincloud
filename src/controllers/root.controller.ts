@@ -4,6 +4,7 @@ import { StatusCodes } from "http-status-codes";
 
 import { isDatabaseConnected } from "../database/util";
 import { IWeatherApiService } from "../types/services";
+import mongoose from "mongoose";
 
 interface IDependencies {
   weatherApiService: IWeatherApiService;
@@ -23,7 +24,7 @@ export default class RootController {
     let weatherServiceStatus: "ERROR" | "OK" = "OK";
     let databaseStatus: "ERROR" | "OK" = "OK";
 
-    if (!isDatabaseConnected()) {
+    if (mongoose.connection.readyState != mongoose.ConnectionStates.connected) {
       status = StatusCodes.SERVICE_UNAVAILABLE;
       databaseStatus = "ERROR";
     }
