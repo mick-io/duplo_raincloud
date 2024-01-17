@@ -27,7 +27,7 @@ export default class ForecastController {
   @route("/")
   @GET()
   async listForecasts(
-    req: Request,
+    _: Request,
     res: Response<GetForecastResponseBody | GetForecastErrorResponse>,
   ) {
     try {
@@ -53,7 +53,7 @@ export default class ForecastController {
   @route("/latest")
   @GET()
   async getLatest(
-    req: Request,
+    _: Request,
     res: Response<
       GetLatestForecastResponseBody | GetLatestForecastErrorResponse
     >,

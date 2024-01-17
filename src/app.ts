@@ -1,6 +1,5 @@
 import { loadControllers, scopePerRequest } from "awilix-express";
-import express, { Response } from "express";
-import mongoose from "mongoose";
+import express from "express";
 import path from "path";
 
 import container from "./container";
@@ -18,24 +17,9 @@ app.use(
   }),
 );
 
-app.use((req, res, next) => {
+app.use((req, _, next) => {
   console.log(`Incoming request for ${req.url}`);
   next();
-});
-
-app.get("/health", async (_, res: Response) => {
-  const isDatabaseOk =
-    mongoose.connection.readyState != mongoose.ConnectionStates.connected;
-
-  const isWeatherServiceOk = await container
-    .resolve("weatherApiService")
-    .healthCheck();
-
-  res.json({
-    server: "OK",
-    database: isDatabaseOk ? "ERROR" : "OK",
-    weatherService: isWeatherServiceOk ? "OK" : "ERROR",
-  });
 });
 
 export default app;
