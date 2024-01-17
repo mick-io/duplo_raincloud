@@ -1,17 +1,18 @@
 import { FilterQuery, Types } from "mongoose";
 
 import LocationModel from "../database/models/location.model";
+import { InvalidArgumentError } from "../errors";
 import { LocationLeanDocument } from "../types/database";
 import { Location } from "../types/location";
+import { ILocationsService } from "../types/services";
 import ForecastService from "./forecast.service";
-import { InvalidArgumentError } from "../errors";
 
 interface IDependencies {
   locationRepository: typeof LocationModel;
   forecastService: ForecastService;
 }
 
-export default class LocationsService {
+export default class LocationsService implements ILocationsService {
   private readonly locations;
   private readonly forecastService;
 

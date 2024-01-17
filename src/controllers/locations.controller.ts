@@ -3,7 +3,7 @@ import { Request, Response } from "express";
 import { ReasonPhrases, StatusCodes } from "http-status-codes";
 import { MongooseError } from "mongoose";
 
-import { ExternalApiError, InvalidArgumentError } from "../errors";
+import { ExternalApiError } from "../errors";
 import validate from "../middleware/validation.middleware";
 import {
   DeleteLocationByIdRequestParamsSchema,
@@ -11,7 +11,6 @@ import {
   GetLocationsRequestBodySchema,
   PostLocationRequestBodySchema,
 } from "../schemas/request.schema";
-import LocationsService from "../services/locations.service";
 import {
   DeleteLocationByIdRequestParams,
   DeleteLocationRequestQuery,
@@ -25,14 +24,15 @@ import {
   PostLocationErrorResponse,
   PostLocationResponseBody,
 } from "../types/response";
+import { ILocationsService } from "../types/services";
 
 interface IDependencies {
-  locationService: LocationsService;
+  locationService: ILocationsService;
 }
 
 @route("/locations")
 export default class LocationsController {
-  private readonly locationService;
+  private readonly locationService: ILocationsService;
 
   constructor({ locationService }: IDependencies) {
     this.locationService = locationService;

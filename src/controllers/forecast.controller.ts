@@ -4,21 +4,21 @@ import { ReasonPhrases, StatusCodes } from "http-status-codes";
 import { MongooseError } from "mongoose";
 
 import { ExternalApiError } from "../errors";
-import ForecastService from "../services/forecast.service";
 import {
   GetForecastErrorResponse,
   GetForecastResponseBody,
   GetLatestForecastErrorResponse,
   GetLatestForecastResponseBody,
 } from "../types/response";
+import { IForecastService } from "../types/services";
 
 interface IDependencies {
-  forecastService: ForecastService;
+  forecastService: IForecastService;
 }
 
 @route("/forecast")
 export default class ForecastController {
-  private readonly forecastService;
+  private readonly forecastService: IForecastService;
 
   constructor({ forecastService }: IDependencies) {
     this.forecastService = forecastService;

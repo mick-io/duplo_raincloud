@@ -3,18 +3,18 @@ import LocationModel from "../database/models/location.model";
 import { ForecastLeanDocument } from "../types/database";
 import { Forecast } from "../types/forecast";
 import { Location } from "../types/location";
-import WeatherApiService from "./weather-api.service";
+import { IForecastService, IWeatherApiService } from "../types/services";
 
 interface IDependencies {
   locationRepository: typeof LocationModel;
   forecastRepository: typeof ForecastModel;
-  weatherApiService: WeatherApiService;
+  weatherApiService: IWeatherApiService;
 }
 
-export default class ForecastService {
+export default class ForecastService implements IForecastService {
   private readonly locationRepository;
   private readonly forecastsRepository;
-  private readonly weatherApiService;
+  private readonly weatherApiService: IWeatherApiService;
 
   constructor({
     forecastRepository,

@@ -5,12 +5,13 @@ import { ConfigType } from "../config";
 import { ExternalApiError } from "../errors";
 import { OpenMeteoHourlyTempResponseBody } from "../types/api";
 import { Location } from "../types/location";
+import { IWeatherApiService } from "../types/services";
 
 interface IDependencies {
   config: ConfigType;
 }
 
-export default class WeatherApiService {
+export default class WeatherApiService implements IWeatherApiService {
   private readonly config;
 
   constructor({ config }: IDependencies) {

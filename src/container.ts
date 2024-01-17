@@ -8,14 +8,19 @@ import LocationModel from "./database/models/location.model";
 import ForecastService from "./services/forecast.service";
 import LocationsService from "./services/locations.service";
 import WeatherApiService from "./services/weather-api.service";
+import {
+  IForecastService,
+  ILocationsService,
+  IWeatherApiService,
+} from "./types/services";
 
 interface IContainer {
   config: ConfigType;
   locationController: LocationsController;
-  locationService: LocationsService;
   forecastController: ForecastController;
-  forecastService: ForecastService;
-  weatherApiService: WeatherApiService;
+  locationService: ILocationsService;
+  forecastService: IForecastService;
+  weatherApiService: IWeatherApiService;
   forecastRepository: typeof ForecastModel;
   locationRepository: typeof LocationModel;
 }
